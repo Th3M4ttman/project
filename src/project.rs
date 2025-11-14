@@ -5,10 +5,10 @@ use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::collections::HashSet;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use crate::utils;
 use crate::template;
-use walkdir::WalkDir;
+
 
 pub fn find_project_path(name: &str) -> Option<PathBuf> {
     let projects_dir = dirs::home_dir()?.join("projects");

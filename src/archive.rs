@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Context, Result};
 use std::fs;
 use std::io::{self, Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::{PathBuf};
 use chrono::Local;
 use zip::ZipArchive;
 use std::fs::File;
