@@ -1,6 +1,13 @@
 
-use clap::{Subcommand};
+use clap::{Parser, Subcommand};
+use serde_json::{json, Value};
 use std::path::{PathBuf};
+
+pub fn test(){
+	println!("Testo")
+}
+
+
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
