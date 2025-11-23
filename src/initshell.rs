@@ -1,4 +1,3 @@
-
 pub fn detect_shell() -> String {
     if let Ok(_) = std::env::var("BASH") {
         return "bash".into();
@@ -6,13 +5,13 @@ pub fn detect_shell() -> String {
     if let Ok(_) = std::env::var("ZSH_NAME") {
         return "zsh".into();
     }
-    std::env::var("SHELL").unwrap_or_default()
+    std::env::var("SHELL")
+        .unwrap_or_default()
         .rsplit('/')
         .next()
         .unwrap_or("bash")
         .to_string()
 }
-
 
 pub fn init_shell(shell: &str) {
     // Initialization code for the shell
@@ -67,11 +66,9 @@ alias projects=\"cd ~/projects/\"
             let code = "
 echo Unsupported shell
 
-";                        
+";
 
             println!("{}", code);
         }
     }
 }
-
-

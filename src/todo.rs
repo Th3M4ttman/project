@@ -1,6 +1,5 @@
 use anyhow::Result;
 
-
 pub fn todo_list() -> Result<()> {
     println!("List todos");
     Ok(())

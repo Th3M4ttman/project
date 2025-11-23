@@ -1,6 +1,6 @@
-use serde_json::{json, Value};
-use std::path::Path;
+use serde_json::{Value, json};
 use std::fs;
+use std::path::Path;
 
 pub fn read_json(path: &Path) -> Value {
     if let Ok(content) = fs::read_to_string(path) {

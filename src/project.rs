@@ -1,14 +1,13 @@
-use serde_json::{json, Value};
+use crate::template;
+use crate::utils;
+use anyhow::{Result, anyhow};
+use serde_json::{Value, json};
+use std::collections::HashSet;
 use std::env;
 use std::fs;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::collections::HashSet;
-use anyhow::{anyhow, Result};
-use crate::utils;
-use crate::template;
-
 
 pub fn find_project_path(name: &str) -> Option<PathBuf> {
     let projects_dir = dirs::home_dir()?.join("projects");
@@ -65,7 +64,10 @@ pub fn link_in_projects_dir(project_path: &Path) {
 }
 
 pub fn maybe_create_upstream(project_name: &str, project_path: &Path) {
-    println!("Do you want to create a GitHub repository for '{}' and push the current branch? [y/N]: ", project_name);
+    println!(
+        "Do you want to create a GitHub repository for '{}' and push the current branch? [y/N]: ",
+        project_name
+    );
     io::stdout().flush().unwrap();
 
     let mut input = String::new();
@@ -140,34 +142,48 @@ pub fn init_project(interactive: bool, template: Option<String>, vars: &[(String
         }
     }
 
-    fs::write(&proj_file, serde_json::to_string_pretty(&json_data).unwrap())
-        .expect("Failed to update project.json");
+    fs::write(
+        &proj_file,
+        serde_json::to_string_pretty(&json_data).unwrap(),
+    )
+    .expect("Failed to update project.json");
 
     // Link project in ~/projects if outside
     if !current_dir.starts_with(projects_dir()) {
         link_in_projects_dir(&current_dir);
     }
     // After applying the Boilr template
-    if Command::new("git").arg("rev-parse").arg("--is-inside-work-tree")
-    .current_dir(&current_dir)
-    .output()
-    .map(|o| o.status.success())
-    .unwrap_or(false)
+    if Command::new("git")
+        .arg("rev-parse")
+        .arg("--is-inside-work-tree")
+        .current_dir(&current_dir)
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
     {
-    // Stage all files
-    let _ = Command::new("git").arg("add").arg("-A")
-        .current_dir(&current_dir)
-        .status();
+        // Stage all files
+        let _ = Command::new("git")
+            .arg("add")
+            .arg("-A")
+            .current_dir(&current_dir)
+            .status();
 
-    // Commit
-    let _ = Command::new("git").arg("commit").arg("-m").arg("initial commit")
-        .current_dir(&current_dir)
-        .status();
+        // Commit
+        let _ = Command::new("git")
+            .arg("commit")
+            .arg("-m")
+            .arg("initial commit")
+            .current_dir(&current_dir)
+            .status();
 
-    // Push and set upstream
-    let _ = Command::new("git").arg("push").arg("--set-upstream").arg("origin").arg("master")
-        .current_dir(&current_dir)
-        .status();
+        // Push and set upstream
+        let _ = Command::new("git")
+            .arg("push")
+            .arg("--set-upstream")
+            .arg("origin")
+            .arg("master")
+            .current_dir(&current_dir)
+            .status();
     }
 }
 
@@ -178,7 +194,9 @@ pub fn create_project(
     vars: &[(String, String)],
     interactive: bool,
 ) {
-    let path = Path::new(name).canonicalize().unwrap_or_else(|_| Path::new(name).to_path_buf());
+    let path = Path::new(name)
+        .canonicalize()
+        .unwrap_or_else(|_| Path::new(name).to_path_buf());
     if path.exists() {
         eprintln!("Error: directory '{}' already exists.", name);
         return;
@@ -197,20 +215,19 @@ pub fn create_project(
     println!("📁 Created new project '{}'", name);
 }
 
-
 pub fn set_project_vars(vars: &[(String, String)]) {
     let proj_file = Path::new(".proj/project.json");
     let mut data = utils::read_json(proj_file);
 
     for (key, value) in vars {
-    if key == "completion" {
-        if let Ok(f) = value.parse::<f64>() {
-            data[key] = serde_json::json!(f);
-            continue;
+        if key == "completion" {
+            if let Ok(f) = value.parse::<f64>() {
+                data[key] = serde_json::json!(f);
+                continue;
+            }
         }
+        data[key] = Value::String(value.clone());
     }
-    data[key] = Value::String(value.clone());
-}
 
     fs::write(proj_file, serde_json::to_string_pretty(&data).unwrap())
         .expect("Failed to write project.json");
@@ -233,11 +250,7 @@ pub fn init_git_repo(path: &Path) {
         return;
     }
     let _ = Command::new("git").arg("init").current_dir(path).output();
-    
-
 }
-
-
 
 pub fn scan_for_proj(recursive: bool) {
     ensure_projects_dir().ok();
@@ -254,9 +267,7 @@ pub fn scan_for_proj(recursive: bool) {
                         if seen.insert(real_path) {
                             println!(
                                 "Found project: {}",
-                                path.file_name() 
-                                    .unwrap_or_default()
-                                    .to_string_lossy()
+                                path.file_name().unwrap_or_default().to_string_lossy()
                             );
                         }
                     }
@@ -297,29 +308,28 @@ pub fn git_status_flags(path: &Path) -> (bool, bool, bool) {
         .status()
         .map(|s| !s.success())
         .unwrap_or(false)
-        ||
-        Command::new("git")
-        .arg("diff")
-        .arg("--cached")
-        .arg("--quiet")
-        .current_dir(path)
-        .status()
-        .map(|s| !s.success())
-        .unwrap_or(false);
+        || Command::new("git")
+            .arg("diff")
+            .arg("--cached")
+            .arg("--quiet")
+            .current_dir(path)
+            .status()
+            .map(|s| !s.success())
+            .unwrap_or(false);
 
     // Unpushed commits (only if remote exists)
     let unpushed = Command::new("git")
-    .args(["rev-parse", "--abbrev-ref", "@{u}"])
-    .current_dir(path)
-    .output()
-    .map(|o| o.status.success()) // only run if upstream exists
-    .unwrap_or(false)
-    && Command::new("git")
-        .args(["log", "@{u}..HEAD", "--oneline"])
+        .args(["rev-parse", "--abbrev-ref", "@{u}"])
         .current_dir(path)
         .output()
-        .map(|o| !o.stdout.is_empty())
-        .unwrap_or(false);
+        .map(|o| o.status.success()) // only run if upstream exists
+        .unwrap_or(false)
+        && Command::new("git")
+            .args(["log", "@{u}..HEAD", "--oneline"])
+            .current_dir(path)
+            .output()
+            .map(|o| !o.stdout.is_empty())
+            .unwrap_or(false);
 
     (unadded, uncommitted, unpushed)
 }
@@ -330,7 +340,11 @@ pub fn list_projects(status_filter: &str, show_progress: bool) {
     let mut seen = std::collections::HashSet::new();
 
     /// Recursively scan directories for projects
-    fn visit(dir: &Path, recursive: bool, seen: &mut std::collections::HashSet<PathBuf>) -> Vec<PathBuf> {
+    fn visit(
+        dir: &Path,
+        recursive: bool,
+        seen: &mut std::collections::HashSet<PathBuf>,
+    ) -> Vec<PathBuf> {
         let mut projects = Vec::new();
 
         if let Ok(entries) = fs::read_dir(dir) {
@@ -377,8 +391,14 @@ pub fn list_projects(status_filter: &str, show_progress: bool) {
 
         let data = utils::read_json(&proj_file);
 
-        let status = data.get("status").and_then(|v| v.as_str()).unwrap_or("active");
-        let completion = data.get("completion").and_then(|v| v.as_f64()).unwrap_or(0.0);
+        let status = data
+            .get("status")
+            .and_then(|v| v.as_str())
+            .unwrap_or("active");
+        let completion = data
+            .get("completion")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0);
 
         if status_filter != "all" && status != status_filter {
             continue;
@@ -392,11 +412,20 @@ pub fn list_projects(status_filter: &str, show_progress: bool) {
         };
 
         let mut flags = String::new();
-        if unadded { flags.push_str("\x1b[31m+\x1b[0m"); } // Use \x1b for escape sequences
-        if uncommitted { flags.push_str("\x1b[31mc\x1b[0m"); }
-        if unpushed { flags.push_str("\x1b[31m^\x1b[0m"); }
+        if unadded {
+            flags.push_str("\x1b[31m+\x1b[0m");
+        } // Use \x1b for escape sequences
+        if uncommitted {
+            flags.push_str("\x1b[31mc\x1b[0m");
+        }
+        if unpushed {
+            flags.push_str("\x1b[31m^\x1b[0m");
+        }
 
-        let project_name = project_path.file_name().unwrap_or_default().to_string_lossy();
+        let project_name = project_path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy();
 
         if show_progress {
             let bar_len = 20;
@@ -412,14 +441,20 @@ pub fn list_projects(status_filter: &str, show_progress: bool) {
             };
 
             let bar = format!(
-                "{}{}{}\x1b[0m{}", 
+                "{}{}{}\x1b[0m{}",
                 color,
                 "█".repeat(filled),
                 "\x1b[0m",
                 "░".repeat(empty)
             );
 
-            println!("{} {} [{}] {:.0}%", project_name, flags, bar, completion * 100.0);
+            println!(
+                "{} {} [{}] {:.0}%",
+                project_name,
+                flags,
+                bar,
+                completion * 100.0
+            );
         } else {
             println!(
                 "{} {} (status: {}, completion: {:.0}%)",
@@ -432,8 +467,6 @@ pub fn list_projects(status_filter: &str, show_progress: bool) {
     }
 }
 
-
-
 pub fn migrate_project(name: &str, destination: Option<PathBuf>) -> Result<()> {
     let default_dest = dirs::home_dir().unwrap().join("projects");
     let destination = destination.unwrap_or(default_dest);
@@ -444,7 +477,11 @@ pub fn migrate_project(name: &str, destination: Option<PathBuf>) -> Result<()> {
         // fallback: check if a directory exists in cwd or home
         .or_else(|| {
             let cwd_path = std::env::current_dir().ok()?.join(name);
-            if cwd_path.exists() { Some(cwd_path) } else { None }
+            if cwd_path.exists() {
+                Some(cwd_path)
+            } else {
+                None
+            }
         })
         .ok_or_else(|| anyhow!("Project '{}' not found", name))?;
 
@@ -462,30 +499,36 @@ pub fn migrate_project(name: &str, destination: Option<PathBuf>) -> Result<()> {
         fs::remove_file(&project_path)?;
     }
 
-    println!("✅ Project '{}' migrated to '{}'", name, dest_path.display());
+    println!(
+        "✅ Project '{}' migrated to '{}'",
+        name,
+        dest_path.display()
+    );
     Ok(())
 }
 
 pub fn remove_project(name: &str, force: bool) -> anyhow::Result<()> {
+    use anyhow::{Context, anyhow};
     use std::io::{self, Write};
-    use anyhow::{anyhow, Context};
-    
 
     let projects_dir = dirs::home_dir().unwrap().join("projects");
     let symlink_path = projects_dir.join(name);
 
     // Determine actual project path
-    let project_path = find_project_path(name)
-        .ok_or_else(|| anyhow!("Project '{}' not found", name))?;
+    let project_path =
+        find_project_path(name).ok_or_else(|| anyhow!("Project '{}' not found", name))?;
 
     if !force {
-        print!("⚠️  Are you sure you want to permanently remove '{}' ? [y/N]: ", name);
+        print!(
+            "⚠️  Are you sure you want to permanently remove '{}' ? [y/N]: ",
+            name
+        );
         io::stdout().flush()?;
         let mut input = String::new();
         io::stdin().read_line(&mut input)?;
         if !matches!(input.trim().to_lowercase().as_str(), "y" | "yes") {
             println!("❎ Aborted removal of '{}'", name);
-            return Ok(())
+            return Ok(());
         }
     }
 
@@ -509,12 +552,8 @@ pub fn remove_project(name: &str, force: bool) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn clone_project(
-    source: &str,
-    dest: Option<&str>,
-    git_clone: bool,
-) -> anyhow::Result<()> {
-    use anyhow::{anyhow, Context};
+pub fn clone_project(source: &str, dest: Option<&str>, git_clone: bool) -> anyhow::Result<()> {
+    use anyhow::{Context, anyhow};
     use serde_json::json;
     use walkdir::WalkDir;
 
@@ -556,12 +595,21 @@ pub fn clone_project(
         anyhow::bail!("Destination '{}' already exists", dest_path.display());
     }
 
-    fs::create_dir_all(dest_path.parent().unwrap())
-        .with_context(|| format!("Failed to create parent directory '{}'", dest_path.display()))?;
+    fs::create_dir_all(dest_path.parent().unwrap()).with_context(|| {
+        format!(
+            "Failed to create parent directory '{}'",
+            dest_path.display()
+        )
+    })?;
 
     // --- Determine if source is a Git URL ---
-    if source.starts_with("http://") || source.starts_with("https://") || source.starts_with("git@") {
-        println!("🌐 Cloning repository '{}' into '{}'", source, dest_path.display());
+    if source.starts_with("http://") || source.starts_with("https://") || source.starts_with("git@")
+    {
+        println!(
+            "🌐 Cloning repository '{}' into '{}'",
+            source,
+            dest_path.display()
+        );
 
         let status = Command::new("git")
             .arg("clone")
@@ -581,7 +629,11 @@ pub fn clone_project(
             .ok_or_else(|| anyhow!("Source project '{}' not found", source))?;
 
         if git_clone && source_path.join(".git").exists() {
-            println!("🌱 Cloning local Git repository '{}' into '{}'", source_path.display(), dest_path.display());
+            println!(
+                "🌱 Cloning local Git repository '{}' into '{}'",
+                source_path.display(),
+                dest_path.display()
+            );
 
             let status = Command::new("git")
                 .arg("clone")
@@ -594,13 +646,18 @@ pub fn clone_project(
                 anyhow::bail!("Git clone failed with exit code {:?}", status.code());
             }
         } else {
-            println!("📁 Copying project '{}' into '{}'", source_path.display(), dest_path.display());
+            println!(
+                "📁 Copying project '{}' into '{}'",
+                source_path.display(),
+                dest_path.display()
+            );
 
             fs_extra::dir::copy(
                 &source_path,
                 &dest_path,
                 &fs_extra::dir::CopyOptions::new().copy_inside(true),
-            ).with_context(|| "Failed to copy project directory")?;
+            )
+            .with_context(|| "Failed to copy project directory")?;
         }
     }
 
@@ -609,13 +666,17 @@ pub fn clone_project(
     if !proj_file.exists() {
         fs::create_dir_all(proj_file.parent().unwrap())?;
 
-        let project_name = dest_path.file_name() 
+        let project_name = dest_path
+            .file_name()
             .unwrap_or_else(|| std::ffi::OsStr::new("cloned_project"))
             .to_string_lossy()
             .to_string();
 
         // Template = git URL if cloned
-        let template = if source.starts_with("http://") || source.starts_with("https://") || source.starts_with("git@") {
+        let template = if source.starts_with("http://")
+            || source.starts_with("https://")
+            || source.starts_with("git@")
+        {
             Some(source.to_string())
         } else {
             None
@@ -668,7 +729,9 @@ pub fn clone_project(
                         if let Some(ver) = line.strip_prefix("__version__") {
                             if let Some(ver) = ver.split('=').nth(1) {
                                 version = ver
-                                    .trim_matches(|c: char| c == '\'' || c == '"' || c.is_whitespace())
+                                    .trim_matches(|c: char| {
+                                        c == '\'' || c == '"' || c.is_whitespace()
+                                    })
                                     .to_string();
                                 break;
                             }
@@ -681,7 +744,11 @@ pub fn clone_project(
         // Check VERSION file recursively
         if version == "0.0.1" {
             for entry in WalkDir::new(&dest_path).into_iter().flatten() {
-                if entry.file_name().to_string_lossy().eq_ignore_ascii_case("VERSION") {
+                if entry
+                    .file_name()
+                    .to_string_lossy()
+                    .eq_ignore_ascii_case("VERSION")
+                {
                     if let Ok(ver) = fs::read_to_string(entry.path()) {
                         version = ver.trim().to_string();
                         break;
@@ -709,6 +776,9 @@ pub fn clone_project(
         link_in_projects_dir(&dest_path);
     }
 
-    println!("✅ Project '{}' cloned successfully", dest_path.file_name().unwrap().to_string_lossy());
+    println!(
+        "✅ Project '{}' cloned successfully",
+        dest_path.file_name().unwrap().to_string_lossy()
+    );
     Ok(())
 }

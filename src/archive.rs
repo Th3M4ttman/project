@@ -1,10 +1,10 @@
-use anyhow::{anyhow, Context, Result};
-use std::fs;
-use std::io::{self, Read, Write};
-use std::path::{PathBuf};
+use anyhow::{Context, Result, anyhow};
 use chrono::Local;
-use zip::ZipArchive;
+use std::fs;
 use std::fs::File;
+use std::io::{self, Read, Write};
+use std::path::PathBuf;
+use zip::ZipArchive;
 
 /// Return the archives directory (`~/.proj/archives`)
 pub fn get_archives_dir() -> PathBuf {
@@ -82,7 +82,10 @@ pub fn archive_project(project_name: &str) -> Result<()> {
             .with_context(|| format!("Failed to delete {}", real_path.display()))?;
     }
 
-    let projects_link = dirs::home_dir().unwrap().join("projects").join(project_name);
+    let projects_link = dirs::home_dir()
+        .unwrap()
+        .join("projects")
+        .join(project_name);
     if projects_link.exists() {
         std::fs::remove_file(&projects_link).ok();
     }
@@ -103,7 +106,12 @@ pub fn list_archives() -> Result<()> {
 
     for entry in entries {
         let entry = entry?;
-        if entry.path().extension().map(|e| e == "zip").unwrap_or(false) {
+        if entry
+            .path()
+            .extension()
+            .map(|e| e == "zip")
+            .unwrap_or(false)
+        {
             let file_name = entry.file_name().into_string().unwrap_or_default();
             println!("📦 {}", file_name.trim_end_matches(".zip"));
             found_any = true;
@@ -140,10 +148,12 @@ pub fn restore_archive(archive_name: &str, destination: Option<&str>) -> Result<
 
     // Extract original project name from archive
     // This assumes archives are named like "projectname_YYYYMMDD_HHMMSS.zip"
-    let original_name = archive_name
-        .splitn(2, '_')
-        .next()
-        .ok_or_else(|| anyhow!("Failed to parse original project name from '{}'", archive_name))?;
+    let original_name = archive_name.splitn(2, '_').next().ok_or_else(|| {
+        anyhow!(
+            "Failed to parse original project name from '{}'",
+            archive_name
+        )
+    })?;
 
     // Determine destination folder
     let dest_path = if let Some(dest) = destination {
@@ -198,6 +208,10 @@ pub fn restore_archive(archive_name: &str, destination: Option<&str>) -> Result<
         );
     }
 
-    println!("✅ Restored archive '{}' to '{}'", archive_name, dest_path.display());
+    println!(
+        "✅ Restored archive '{}' to '{}'",
+        archive_name,
+        dest_path.display()
+    );
     Ok(())
 }

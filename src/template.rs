@@ -10,10 +10,7 @@ pub fn apply_boilr_template(template: &str, json_path: &Path, interactive: bool)
     let boilr_path = "boilr";
 
     let mut cmd = Command::new(boilr_path);
-    cmd.arg("template")
-        .arg("use")
-        .arg(template)
-        .arg(".");
+    cmd.arg("template").arg("use").arg(template).arg(".");
 
     if !interactive {
         cmd.arg("--use-defaults");
@@ -21,8 +18,8 @@ pub fn apply_boilr_template(template: &str, json_path: &Path, interactive: bool)
     }
 
     cmd.stdin(Stdio::inherit())
-       .stdout(Stdio::inherit())
-       .stderr(Stdio::inherit());
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit());
 
     println!("⚙️ Applying boilr template: {}", template);
 
@@ -73,7 +70,8 @@ pub fn select_template() -> Option<String> {
         }
     }
 
-    templates.iter()
+    templates
+        .iter()
         .find(|t| t.eq_ignore_ascii_case(trimmed))
         .cloned()
 }
