@@ -1,12 +1,45 @@
 
-use clap::{Parser, Subcommand};
-use serde_json::{json, Value};
+use clap::{Args, Subcommand};
 use std::path::{PathBuf};
 
-pub fn test(){
-	println!("Testo")
+
+
+#[derive(Args, Debug)]
+pub struct TodoArgs {
+    #[command(subcommand)]
+    pub action: Option<TodoAction>,
+
+    /// List todos (shortcut)
+    #[arg(short = 'l', long = "list", conflicts_with_all = ["add", "remove"])]
+    pub list_flag: bool,
+
+    /// Add a todo (shortcut)
+    #[arg(short = 'a', long = "add", conflicts_with_all = ["list_flag", "remove"])]
+    pub add: Option<String>,
+
+    /// Remove a todo (shortcut)
+    #[arg(short = 'r', long = "remove", conflicts_with_all = ["list_flag", "add"])]
+    pub remove: Option<String>,
 }
 
+#[derive(Subcommand, Debug)]
+pub enum TodoAction {
+    /// List todos
+    #[command(alias = "l")]
+    List,
+
+    /// Add a todo
+    #[command(alias = "a")]
+    Add {
+        text: String,
+    },
+
+    /// Remove a todo by index or text
+    #[command(alias = "r")]
+    Remove {
+        pattern: String,
+    },
+}
 
 
 #[derive(Subcommand, Debug)]
@@ -103,6 +136,8 @@ pub enum Commands {
         #[arg(short, long)]
         destination: Option<String>,
     },
+
+    Todo(TodoArgs),
 
 }
 

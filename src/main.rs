@@ -3,6 +3,7 @@ mod project;
 mod archive;
 mod template;
 mod utils;
+mod todo;
 
 use clap::Parser;
 use anyhow::Result;
@@ -36,11 +37,28 @@ fn main() -> Result<()> {
         climod::Commands::Migrate { name, destination, copy: _ } => project::migrate_project(name, destination.clone()).expect("Migration failed"),
         climod::Commands::Remove { name, force } => project::remove_project(name, *force).expect("Failed to remove project"),
         climod::Commands::Clone { source, dest, git_clone } =>  project::clone_project(source, dest.as_deref(), *git_clone)
-        .expect("Failed to clone project"),
+            .expect("Failed to clone project"),
         climod::Commands::Archive { name, .. } => archive::archive_project(name).expect("Failed to archive project"),
         climod::Commands::Archives => archive::list_archives()?,
         climod::Commands::ArchiveRemove { name } => archive::remove_archive(name)?,
         climod::Commands::Restore { name, destination } => archive::restore_archive(&name, destination.as_deref())?,
+        climod::Commands::Todo(todoargs) => {
+            if let Some(action) = &todoargs.action {
+                match action {
+                    climod::TodoAction::List => todo::todo_list()?,
+                    climod::TodoAction::Add { text } => todo::todo_add(text)?,
+                    climod::TodoAction::Remove { pattern } => todo::todo_remove(pattern)?,
+                }
+            } else if todoargs.list_flag {
+                todo::todo_list()?;
+            } else if let Some(text) = &todoargs.add {
+                todo::todo_add(text)?;
+            } else if let Some(pattern) = &todoargs.remove {
+                todo::todo_remove(pattern)?;
+            } else {
+                todo::todo_list()?;
+            }
+        }
     }
-  Ok(())
+    Ok(())
 }
