@@ -138,7 +138,8 @@ pub enum Commands {
     },
 
     Todo(TodoArgs),
-
+    
+    Initshell,
 }
 
 pub fn parse_key_val<T, U>(s: &str) -> Result<(T, U), String>

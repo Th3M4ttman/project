@@ -4,6 +4,7 @@ mod archive;
 mod template;
 mod utils;
 mod todo;
+mod initshell;
 
 use clap::Parser;
 use anyhow::Result;
@@ -42,6 +43,10 @@ fn main() -> Result<()> {
         climod::Commands::Archives => archive::list_archives()?,
         climod::Commands::ArchiveRemove { name } => archive::remove_archive(name)?,
         climod::Commands::Restore { name, destination } => archive::restore_archive(&name, destination.as_deref())?,
+        climod::Commands::Initshell {} => {
+            let shell = initshell::detect_shell();
+            initshell::init_shell(&shell);
+        }
         climod::Commands::Todo(todoargs) => {
             if let Some(action) = &todoargs.action {
                 match action {
