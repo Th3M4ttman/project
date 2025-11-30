@@ -3,7 +3,19 @@
 use anyhow::Result;
 use std::fs;
 use serde_json::{Value, json};
-use std::path::{Path, PathBuf};
+use std::path::{Path};
+use std::fs::File;
+use std::io::Write;
+use serde::{Deserialize, Serialize};
+
+
+#[derive(Serialize, Deserialize)]
+pub struct Todo {
+    title: String,
+    description: String,
+    complete: bool
+}
+
 
 pub fn read_json(path: &Path) -> Value {
     if let Ok(content) = fs::read_to_string(path) {
@@ -22,11 +34,21 @@ pub fn todo_list() -> Result<()> {
         fs::create_dir_all(&project_config)?;
     }
 
-    let data = read_json(proj_file);
-    match data.get("todos") {
-        Some(val) => println!("{}", val),
-        None => eprintln!("Key not found."),
+    let todos_file = project_config.join("todos.json");
+    if !todos_file.exists(){
+        let mut f = File::create(todos_file)?;
+        f.write_all(b"{\"todos\":[\"Configure Project Todos\"]}")?;
+
+
     }
+    
+    if let Ok(content) = fs::read_to_string(proj_file) {
+        println!("{}", content)
+    } else {
+        println!("Fuck")
+    }
+    
+
 
     println!("List todos");
     Ok(())
