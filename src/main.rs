@@ -9,7 +9,8 @@ mod utils;
 use anyhow::Result;
 use clap::Parser;
 
-/// Project — a simple project management and orchestration CLI tool
+
+/// Project — a project management and orchestration CLI tool
 #[derive(Parser, Debug)]
 #[command(name = "project")]
 #[command(version = "0.2.2")]
@@ -64,9 +65,9 @@ fn main() -> Result<()> {
         climod::Commands::Archives => archive::list_archives()?,
         climod::Commands::ArchiveRemove { name } => archive::remove_archive(name)?,
         climod::Commands::Restore { name, destination } => {
-            archive::restore_archive(&name, destination.as_deref())?
+            archive::restore_archive(name, destination.as_deref())?
         }
-        climod::Commands::Initshell {} => {
+        climod::Commands::Initshell => {
             let shell = initshell::detect_shell();
             initshell::init_shell(&shell);
         }
